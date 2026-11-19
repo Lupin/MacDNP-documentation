@@ -1,0 +1,6 @@
+format_pouces,panneau,dpi,debut_ligne_inclus,fin_ligne_exclue,recouvrement_precedent_lignes
+6x14,1,300,0,2400,0
+6x14,2,300,1800,4200,600
+6x20,1,300,0,2400,0
+6x20,2,300,1800,4200,600
+6x20,3,300,3600,6000,600

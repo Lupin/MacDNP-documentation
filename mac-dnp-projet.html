@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mac DNP — Vue du projet</title>
+<style>
+:root{color-scheme:light dark;--accent:#2456a6;--line:#c7d0dd}
+@media(prefers-color-scheme:dark){:root{--accent:#a9c9ff;--line:#516179}}
+body{font:1rem/1.65 system-ui,sans-serif;margin:0}
+main{max-width:52rem;margin:auto;padding:clamp(1rem,5vw,4rem)}
+h1{font-size:clamp(2.5rem,8vw,4rem);line-height:1.05;margin:.4em 0}
+h2{line-height:1.25}section{border-top:1px solid var(--line);margin-top:2rem}
+a{color:var(--accent)}nav{display:flex;flex-wrap:wrap;gap:.4rem 1.25rem}
+figure{margin:1.5rem 0}.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1.35rem;padding:0;list-style:none}
+.flow li{position:relative;padding:.8rem;border-radius:.5rem;color:#18233a;line-height:1.4}
+.flow li+li::before{content:"→";position:absolute;right:100%;width:1.35rem;text-align:center;color:var(--accent);font-weight:bold}
+.mcp-flow{grid-template-columns:repeat(3,minmax(0,1fr))}.flow strong,.gallery-path strong{display:block}
+.source{background:#cde6ff}.prep{background:#e2d7ff}.queue{background:#ffe0a7}.printer{background:#bcebd6}
+.gallery-path{padding:.8rem;border-radius:.5rem;background:#fbd5e9;color:#18233a}
+figcaption{font-size:.9rem}.tool-map{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr));gap:.75rem}.tool-map div{padding:.85rem;border-radius:.5rem;color:#18233a}.tool-map a{color:inherit}.tool-list h4{margin-bottom:0}.tool-list p{margin-top:.25rem}
+@media(max-width:650px){.flow{grid-template-columns:1fr}.flow li+li::before{content:"↓";right:auto;left:1rem;bottom:100%;width:auto}}
+dt{font-weight:700}dd{margin:0 0 .7rem}
+</style>
+</head>
+<body><main>
+<header>
+<h1>Mac DNP</h1>
+<p>Application macOS en français pour préparer, envoyer et suivre des impressions photo sur des DNP DS620 et DS620A avec le pilote officiel.</p>
+<p><strong>Version 0.8</strong> · Prototype fonctionnel côté Mac · Impression physique à valider</p>
+<nav aria-label="Sommaire">
+<a href="#architecture">Architecture</a><a href="#approche">Outils et approche</a><a href="#sdk-dnp">SDK officiel DNP</a><a href="#chronologie">Chronologie</a><a href="#etat">État actuel</a><a href="#suite">À faire</a>
+<a href="panoramiques-dnp.html">Étude des panoramiques et des coupes</a></nav>
+</header>
+<section id="architecture">
+<h2>Architecture</h2>
+<figure>
+<ol class="flow" aria-label="Trajet d’une photo vers l’imprimante">
+<li class="source"><strong>Importer</strong>Glisser-déposer ou dossier surveillé</li>
+<li class="prep"><strong>Préparer</strong>Photos à envoyer et nombre d’exemplaires</li>
+<li class="queue"><strong>Mettre en file</strong>macOS reçoit le travail via CUPS</li>
+<li class="printer"><strong>Imprimer</strong>Le pilote officiel transmet le travail à la DNP</li>
+</ol>
+<p class="gallery-path"><strong>Galerie de suivi</strong>Mac DNP combine les vignettes des photos importées avec l’état de la file macOS pour afficher les délais estimés sur le Mac ou un écran externe.</p>
+<figcaption>Une photo crée un seul travail dans la file, même si plusieurs exemplaires sont demandés.</figcaption>
+</figure>
+<dl>
+<dt>Interface native</dt><dd>SwiftUI affiche les imprimantes, les photos, les réglages et la file macOS. AppKit gère la fenêtre de galerie et son passage en plein écran sur un écran déjà connecté.</dd>
+<dt>Préparation des photos</dt><dd>Le flux photo conserve les copies importées et les états sur disque. On peut retirer une photo ou changer sa quantité avant l’envoi. Une photo envoyée correspond à un travail macOS, avec un nombre d’exemplaires.</dd>
+<dt>Système d’impression et galerie</dt><dd>Mac DNP interroge CUPS pour connaître les files, les travaux et les formats déclarés par le pilote. La galerie reprend les vignettes des photos importées et les délais indicatifs. La file macOS peut aussi contenir des travaux provenant d’autres applications.</dd>
+</dl>
+</section>
+<section id="approche">
+<h2>Outils et approche</h2>
+<figure>
+<div class="tool-map">
+<div class="source"><strong>1. Construire</strong><br>Swift → SwiftPM<br>SwiftUI + AppKit → Interface Mac</div>
+<div class="prep"><strong>2. Vérifier</strong><br>CoreChecks → Règles métier<br><a href="#mcp">MCP → Fenêtre native</a></div>
+<div class="queue"><strong>3. Imprimer</strong><br>Commandes CUPS → File macOS<br>Pilote DNP → Imprimante</div>
+<div class="printer"><strong>4. Livrer</strong><br>Git → Historique local<br>gh + Git → Dépôt GitHub</div>
+</div>
+<figcaption>Les outils sont regroupés par usage. CUPS et le pilote DNP interviennent lors de l’impression.</figcaption>
+</figure>
+<p>Le projet sépare l’interface, les règles métier et l’accès à l’impression. Mac DNP sauvegarde l’état avant l’envoi. Si le résultat est incertain, une vérification manuelle est requise avant tout renvoi.</p>
+<div class="tool-list">
+<h4>Swift</h4><p>Le langage de l’application et de son noyau, qui calcule les délais et suit l’état des travaux.</p>
+<h4>Swift Package Manager</h4><p>Configure les modules et compile l’application avec <code>swift build --product MacDNP</code>. Le paquet ne contient aucune dépendance externe.</p>
+<h4>SwiftUI</h4><p>Construit les vues natives du tableau de bord, de la préparation des photos et de la galerie.</p>
+<h4>AppKit</h4><p>Donne accès au sélecteur de fichiers macOS et permet de placer la fenêtre de galerie sur un écran connecté et de la passer en plein écran.</p>
+<h4>CoreChecks</h4><p>Exécute les contrôles du dépôt avec <code>swift run CoreChecks</code>. Il couvre notamment la lecture des files, les estimations et les règles de reprise.</p>
+<h3 id="mcp">Contrôle d’interface via MCP</h3>
+<figure>
+<ol class="flow mcp-flow" aria-label="Vérification de la fenêtre Mac DNP via MCP">
+<li class="source"><strong>Codex</strong>Demande d’ouvrir l’application et de lire sa fenêtre.</li>
+<li class="prep"><strong>Outil MCP de contrôle d’interface</strong>Ouvre Mac DNP et renvoie les éléments visibles de la fenêtre.</li>
+<li class="printer"><strong>Mac DNP</strong>Affiche sa vue d’ensemble, ses boutons et l’état des imprimantes.</li>
+</ol>
+<figcaption>Ce parcours sert à vérifier l’interface pendant le développement. L’impression passe par CUPS et le pilote DNP.</figcaption>
+</figure>
+<p>MCP (Model Context Protocol) donne à Codex accès à l’outil de contrôle d’interface. Cet outil a permis de confirmer que la fenêtre native affichait les compteurs « Photos à envoyer » et « File macOS ». Mac DNP fonctionne sans serveur MCP.</p>
+<h4>CUPS</h4><p>Le système d’impression de macOS gère les files. Mac DNP s’appuie sur quatre de ses commandes.</p>
+<h4><code>lpstat</code></h4><p>Liste les imprimantes et les travaux présents ou terminés selon macOS.</p>
+<h4><code>lpoptions</code></h4><p>Lit les formats déclarés par le pilote pour alimenter les choix de papier.</p>
+<h4><code>lp</code></h4><p>Envoie une photo à la file choisie avec ses paramètres, dont le nombre d’exemplaires.</p>
+<h4><code>cancel</code></h4><p>Demande à macOS d’annuler un travail de la file selon les droits de l’utilisateur.</p>
+<h4>Pilote officiel DNP</h4><p>Fait le lien avec l’imprimante et expose ses options à macOS. Il s’installe séparément.</p>
+<h4>Git</h4><p>Conserve l’historique des sources et pousse les commits vers le dépôt distant.</p>
+<h4>GitHub CLI (<code>gh</code>)</h4><p>A servi à créer le dépôt privé et à vérifier la présence de la branche principale.</p>
+<h4>GitHub</h4><p>Héberge le dépôt privé, son README et les archives des versions livrées.</p>
+</div>
+</section>
+<section id="sdk-dnp"><h2>SDK officiel DNP · accès et coût</h2>
+<p><strong>Tarif à confirmer directement auprès de DNP.</strong> DNP mentionne le kit de développement pour certaines fonctions de la DS620. Les pages officielles consultées ne publient ni prix du kit ni conditions de redistribution. La gratuité mentionnée sur la fiche produit concerne l’utilitaire Hot Folder Print. <a href="https://shop.dnpphoto.eu/printers/dp-ds620">Fiche officielle DS620</a> · <a href="https://dnpphoto.eu/downloads/">Catalogue DNP</a></p>
+<p><strong>Comment demander l’accès.</strong> Écrire à <a href="mailto:support.pie@dnp-g.com">support.pie@dnp-g.com</a> ou utiliser le <a href="https://dnpphoto.eu/contact-us/">formulaire DNP Europe</a>. Préciser les modèles DS620 / DS620A, la cible macOS sur Apple Silicon et les fonctions recherchées, notamment le panorama et les coupes programmables. Demander le contact chargé des intégrations développeurs. <a href="https://dnpphoto.eu/technical-support/">Coordonnées officielles</a></p>
+<p><strong>Plateformes et licence.</strong> Le revendeur français MB Tech décrit un accès professionnel sur demande avec accord de confidentialité. Il cite Windows, Android et une documentation de commandes USB pour Linux, sans version Mac dans son offre. Ces indications commerciales restent à confirmer auprès de DNP. <a href="https://www.mbtech.fr/imprimantes-professionnelles/390-imprimante-thermique-dnp-ds-620.html">Description du revendeur</a></p>
+<p><strong>Pour décider de l’intégration</strong>, demander par écrit le coût éventuel de l’évaluation, du développement et de la diffusion, les éventuelles redevances par poste, ainsi que les droits de distribuer une bibliothèque ou d’implémenter les commandes USB sur macOS. Faire confirmer les formats panoramiques et les paramètres de coupe effectivement exposés.</p></section>
+<section id="chronologie">
+<h2>Chronologie</h2>
+<ol>
+<li><strong>Cadrage.</strong> Choix du pilote officiel et distinction entre les fonctions accessibles dans macOS et celles qui nécessitent des essais sur une DNP.</li>
+<li><strong>Premier parcours photo.</strong> Détection des files DNP, suivi des travaux, import par glisser-déposer et dossier surveillé.</li>
+<li><strong>Galerie événementielle.</strong> Ajout des vignettes et de la fenêtre indépendante pour un écran externe, avec passage en plein écran sur un écran AirPlay.</li>
+<li><strong>Estimations et version 0.8.</strong> Délais cumulés en fonction des exemplaires, quantité modifiable par photo et distinction entre les photos à envoyer et les travaux déjà transmis à macOS.</li>
+<li><strong>Archivage.</strong> Regroupement des sources et des anciennes livraisons dans le dépôt GitHub privé.</li>
+</ol>
+</section>
+<section id="etat">
+<h2>État actuel</h2>
+<ul>
+<li>Le prototype compile sur Apple Silicon. Les contrôles logiciels existants passent. Le plein écran a été essayé sur une Apple TV déjà connectée.</li>
+<li>Le délai cumule le nombre de tirages et une durée par tirage réglée manuellement. Il se recalcule quand un travail quitte la file. Ce signal macOS ne confirme pas la sortie physique ni l’avancement de chaque exemplaire.</li>
+<li>Les formats affichés proviennent du pilote. Le papier réellement chargé, le cadrage, les quantités et les délais restent à vérifier sur une DS620 ou DS620A.</li>
+</ul>
+</section>
+<section id="suite">
+<h2>Ce qui reste à faire</h2>
+<ol>
+<li><strong>Valider sur une imprimante réelle.</strong> Vérifier pilote, formats, cadrage, exemplaires, annulations, délais et lecture éventuelle des fournitures et du firmware.</li>
+<li><strong>Gérer plusieurs imprimantes.</strong> Identifier chaque appareil, répartir les travaux et éprouver la reprise après déconnexion sans doublons.</li>
+<li><strong>Vérifier les options DNP.</strong> Tester les coupes standard, puis établir la faisabilité des coupes personnalisées, de la bande continue et du panorama. Identifier l’utilitaire officiel de mise à jour du firmware.</li>
+<li><strong>Étendre les usages.</strong> Profils ICC et finitions, dialogue d’impression et mise en page macOS, file virtuelle, réception AirPrint et diffusion de la galerie via Syphon ou NDI.</li>
+</ol>
+</section>
+<footer><a href="https://github.com/Lupin/MacDNP">Dépôt GitHub privé de Mac DNP</a></footer>
+</main></body></html>
